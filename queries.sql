@@ -30,5 +30,21 @@ end
 
 -- Queries
 
+-- top 5 sources by number of campaigns
+select s.name, count(cs.campaign_id) as nr_campaigns from campaigns_sources cs
+join sources s on s.id = cs.source_id
+group by cs.source_id
+order by nr_campaigns desc
+limit 5;
+
+-- campaigns without sources
+select c.name, c.id from campaigns c
+left join campaigns_sources cs on c.id = cs.campaign_id
+where cs.source_id is null;
+
+-- all names of campaigns + sources0
+select c.name from campaigns c
+union
+select s.name from sources s;
 
 
