@@ -42,7 +42,7 @@ select c.name, c.id from campaigns c
 left join campaigns_sources cs on c.id = cs.campaign_id
 where cs.source_id is null;
 
--- all names of campaigns + sources0
+-- all names of campaigns + sources
 select c.name from campaigns c
 union
 select s.name from sources s;
