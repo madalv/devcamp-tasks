@@ -27,9 +27,10 @@ func BenchmarkGetCampaignsForSource(b *testing.B) {
 
 	campRepo := repository.NewCampaignRepository(conn)
 	sourceRepo := repository.NewSourceRepository(conn)
+	cache := repository.NewLocalCache()
 
 	r := chi.NewRouter()
-	r = RegisterHandlers(r, campRepo, sourceRepo)
+	r = RegisterHandlers(r, campRepo, sourceRepo, cache)
 
 	rr := httptest.NewRecorder()
 

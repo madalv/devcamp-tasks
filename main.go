@@ -30,6 +30,7 @@ func main() {
 	// repositories
 	campRepo := repository.NewCampaignRepository(conn)
 	sourceRepo := repository.NewSourceRepository(conn)
+	cache := repository.NewLocalCache()
 
 	// seed db if needed
 	cnt, _ := campRepo.GetCount()
@@ -46,7 +47,7 @@ func main() {
 	r.Use(middleware.Timeout(10 * time.Second))
 	r.Use(middleware.Logger)
 
-	r = api.RegisterHandlers(r, campRepo, sourceRepo)
+	r = api.RegisterHandlers(r, campRepo, sourceRepo, cache)
 
 	slog.Infof("Serving HTTP on %s", cfg.HTTPort)
 	err = http.ListenAndServe(cfg.HTTPort, r)
