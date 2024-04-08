@@ -32,7 +32,7 @@ end;
 -- Queries
 
 -- top 5 sources by number of campaigns, fixed 
-select s.name, s.id, count(cs.campaign_id) from sources s
+select s.name, s.id from sources s
 left join campaigns_sources cs on s.id = cs.source_id
 group by s.id
 order by count(cs.campaign_id) desc

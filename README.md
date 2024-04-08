@@ -2,7 +2,7 @@
 
 All SQL statements can be found in `statements.sql`.
 
-To create the database, simply run `make run`, then `make migup`, which will run the migrations on the MySQL database.
+To create the database, simply run `make run`, then `make migup`, which will run the migrations on the MariaDB database.
 
 `db/migrations` currently holds the first migration that defines the initial schema.
 

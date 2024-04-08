@@ -50,7 +50,7 @@ func (r *SourceRepository) Create(c *model.CreateSourceDTO) (sourceID int64, err
 
 func (r *SourceRepository) GetSourcesByCampNr(limit uint) (camps []model.Source, err error) {
 	query :=
-		`select s.name, s.id, count(cs.campaign_id) from sources s
+		`select s.name, s.id from sources s
 		left join campaigns_sources cs on s.id = cs.source_id
 		group by s.id
 		order by count(cs.campaign_id) desc
