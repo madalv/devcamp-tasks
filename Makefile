@@ -10,7 +10,5 @@ migup:
 migdown:
 	migrate -path db/migrations -database "mysql://user:password@tcp(127.0.0.1:3306)/db" -verbose down
 
-sqlc:
-	sqlc generate
 
 .PHONY: run sqlc migup migdown newmig

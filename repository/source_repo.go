@@ -2,6 +2,7 @@ package repository
 
 import (
 	"adt/model"
+	"github.com/gookit/slog"
 	"github.com/jmoiron/sqlx"
 )
 
@@ -10,6 +11,7 @@ type SourceRepository struct {
 }
 
 func NewSourceRepository(db *sqlx.DB) *SourceRepository {
+	slog.Info("Setting up new Source Repository . . .")
 	return &SourceRepository{db: db}
 }
 

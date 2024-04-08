@@ -2,6 +2,7 @@ package repository
 
 import (
 	"adt/model"
+	"github.com/gookit/slog"
 	"github.com/jmoiron/sqlx"
 )
 
@@ -10,6 +11,7 @@ type CampaignRepository struct {
 }
 
 func NewCampaignRepository(db *sqlx.DB) *CampaignRepository {
+	slog.Info("Setting up new Campaign Repository . . .")
 	return &CampaignRepository{db: db}
 }
 
@@ -52,6 +54,20 @@ func (r *CampaignRepository) GetAllNoSources() (camps []model.Campaign, err erro
 		left join campaigns_sources cs on c.id = cs.campaign_id
 		where cs.source_id is null`
 	err = r.db.Select(&camps, query)
+	return
+}
+
+func (r *CampaignRepository) GetAllBySourceID(sourceID int) (camps []model.Campaign, err error) {
+	query :=
+		`select c.name, c.id from campaigns c
+		join campaigns_sources cs on c.id = cs.campaign_id
+		where cs.source_id = ?`
+	err = r.db.Select(&camps, query, sourceID)
+	return
+}
+
+func (r *CampaignRepository) GetCount() (count int, err error) {
+	err = r.db.Get(&count, `select count(*) from campaigns`)
 	return
 }
 
