@@ -2,9 +2,10 @@ package main
 
 import (
 	"adt/config"
-	db "adt/db/sqlc"
-	"database/sql"
-
+	"adt/db"
+	"adt/repository"
+	"adt/util"
+	_ "github.com/go-sql-driver/mysql"
 	"github.com/gookit/slog"
 )
 
@@ -14,17 +15,17 @@ func main() {
 		slog.Fatal(err)
 	}
 
-	conn, err := sql.Open(cfg.DBDriver, cfg.DBSource)
+	conn, err := db.NewMariaDB(cfg)
 	if err != nil {
 		slog.Fatal(err)
 	}
 
-	querier := db.New(conn)
+	campRepo := repository.NewCampaignRepository(conn)
+	sourceRepo := repository.NewSourceRepository(conn)
 
-	seeder := db.NewSeeder(querier)
-
-	err = seeder.SeedDB(100)
+	seeder := util.NewSeeder(sourceRepo, campRepo)
+	err = seeder.SeedDB(100, 10)
 	if err != nil {
-		slog.Error(err)
+		slog.Fatal(err)
 	}
 }

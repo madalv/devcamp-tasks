@@ -12,7 +12,8 @@ create table campaigns_sources (
   campaign_id bigint unsigned not null,
   source_id bigint unsigned not null,
   foreign key (campaign_id) references campaigns(id) on delete cascade,
-  foreign key (source_id) references sources(id) on delete cascade
+  foreign key (source_id) references sources(id) on delete cascade,
+  primary key (campaign_id, source_id)
 );
 
 -- ensure that a source can be used in a maximum of 10 campaigns
