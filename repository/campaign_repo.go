@@ -4,6 +4,7 @@ import (
 	"adt/model"
 	"github.com/gookit/slog"
 	"github.com/jmoiron/sqlx"
+	"strings"
 )
 
 type CampaignRepository struct {
@@ -28,7 +29,11 @@ func (r *CampaignRepository) Create(c *model.CreateCampaignDTO) (campID int64, e
 		err = tx.Commit()
 	}()
 
-	res, err := tx.Exec(`insert into campaigns (name) values (?)`, c.Name)
+	res, err := tx.Exec(`insert into campaigns (name, blacklist, whitelist) values (?, ?, ?)`,
+		c.Name,
+		strings.Join(c.Blacklist, ","),
+		strings.Join(c.Whitelist, ","))
+
 	if err != nil {
 		return
 	}
@@ -59,24 +64,32 @@ func (r *CampaignRepository) GetAllNoSources() (camps []model.Campaign, err erro
 
 func (r *CampaignRepository) GetAllBySourceID(sourceID int) (camps []model.Campaign, err error) {
 	query :=
-		`select c.name, c.id from campaigns c
+		`select c.name, c.id, c.blacklist, c.whitelist from campaigns c
 		join campaigns_sources cs on c.id = cs.campaign_id
 		where cs.source_id = ?`
-	err = r.db.Select(&camps, query, sourceID)
+	rows, err := r.db.Queryx(query, sourceID)
+	if err != nil {
+		return
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var camp model.Campaign
+		var blacklistStr, whitelistStr string
+		err = rows.Scan(&camp.Name, &camp.ID, &blacklistStr, &whitelistStr)
+		if err != nil {
+			return
+		}
+
+		camp.Blacklist = strings.Split(blacklistStr, ",")
+		camp.Whitelist = strings.Split(whitelistStr, ",")
+		camps = append(camps, camp)
+	}
+
 	return
 }
 
 func (r *CampaignRepository) GetCount() (count int, err error) {
 	err = r.db.Get(&count, `select count(*) from campaigns`)
-	return
-}
-
-func (r *CampaignRepository) Update(c *model.Campaign) (err error) {
-	_, err = r.db.Exec(`update campaigns set name = ? where id = ?`, c.Name, c.ID)
-	return
-}
-
-func (r *CampaignRepository) Delete(id int64) (err error) {
-	_, err = r.db.Exec(`update campaigns set name = ? where id = ?`, id)
 	return
 }

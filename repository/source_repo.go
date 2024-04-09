@@ -58,13 +58,3 @@ func (r *SourceRepository) GetSourcesByCampNr(limit uint) (camps []model.Source,
 	err = r.db.Select(&camps, query, limit)
 	return
 }
-
-func (r *SourceRepository) Update(c *model.Source) (err error) {
-	_, err = r.db.Exec(`update sources set name = ? where id = ?`, c.Name, c.ID)
-	return
-}
-
-func (r *SourceRepository) Delete(id int64) (err error) {
-	_, err = r.db.Exec(`update sources set name = ? where id = ?`, id)
-	return
-}

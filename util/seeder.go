@@ -4,6 +4,7 @@ import (
 	"adt/model"
 	"github.com/brianvoe/gofakeit/v7"
 	"github.com/gookit/slog"
+	"slices"
 )
 
 type SourceRepo interface {
@@ -47,6 +48,8 @@ func (s *DBSeeder) seedCampaigns(rows int) ([]int64, error) {
 		id, err := s.campaignRepo.Create(&model.CreateCampaignDTO{
 			Name:      gofakeit.Word(),
 			SourceIDs: nil,
+			Blacklist: []string{gofakeit.DomainName()},
+			Whitelist: []string{gofakeit.DomainName()},
 		})
 		if err != nil {
 			return nil, err
@@ -60,13 +63,13 @@ func (s *DBSeeder) seedSources(campIDs []int64, rows, maxCampPerSource int) erro
 	for i := 0; i < rows; i++ {
 		nrCampPerSource := gofakeit.Number(0, maxCampPerSource)
 		source := model.CreateSourceDTO{
-			Name:        gofakeit.DomainName(),
+			Name:        gofakeit.Company(),
 			CampaignIDs: make([]int64, nrCampPerSource),
 		}
 
 		for j := 0; j < nrCampPerSource; {
 			campID := campIDs[gofakeit.IntN(rows)]
-			if !contains(source.CampaignIDs, campID) {
+			if !slices.Contains(source.CampaignIDs, campID) {
 				source.CampaignIDs[j] = campID
 				j++
 			}
@@ -77,13 +80,4 @@ func (s *DBSeeder) seedSources(campIDs []int64, rows, maxCampPerSource int) erro
 		}
 	}
 	return nil
-}
-
-func contains(slice []int64, value int64) bool {
-	for _, item := range slice {
-		if item == value {
-			return true
-		}
-	}
-	return false
 }

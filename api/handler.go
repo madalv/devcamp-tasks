@@ -5,8 +5,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/go-chi/chi/v5"
+	"github.com/gookit/slog"
 	"net/http"
+	"slices"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -20,8 +23,8 @@ type SourceRepo interface {
 }
 
 type Cache interface {
-	Get(key string) ([]byte, bool)
-	Put(key string, value []byte, ttl time.Duration)
+	Get(key string) ([]model.Campaign, bool)
+	Put(key string, value []model.Campaign, ttl time.Duration)
 }
 
 type handler struct {
@@ -50,26 +53,52 @@ func (h *handler) getCampaignsForSource(w http.ResponseWriter, r *http.Request) 
 		http.Error(w, "invalid sourceID", http.StatusBadRequest)
 		return
 	}
+	domain := strings.ToLower(r.URL.Query().Get("domain"))
+	var filteredCamps []model.Campaign
 
 	// try to retrieve from cache first
-	data, ok := h.cache.Get(fmt.Sprintf("CAMPS_FOR_SRC_%d", sourceID))
+	camps, ok := h.cache.Get(fmt.Sprintf("CAMPS_FOR_SRC_%d", sourceID))
 	if ok {
-		writeJson(w, data)
+		filteredCamps = filterCampaigns(camps, domain)
+
+		encoded, err := json.Marshal(filteredCamps)
+		if err != nil {
+			http.Error(w, "could not marshal response", http.StatusInternalServerError)
+			return
+		}
+
+		writeJson(w, encoded)
 		return
 	}
 
-	camps, err := h.campaignRepo.GetAllBySourceID(sourceID)
+	camps, err = h.campaignRepo.GetAllBySourceID(sourceID)
+	if err != nil {
+		slog.Error(err)
+	}
+	filteredCamps = filterCampaigns(camps, domain)
 
-	data, err = json.Marshal(camps)
+	encoded, err := json.Marshal(filteredCamps)
 	if err != nil {
 		http.Error(w, "could not marshal response", http.StatusInternalServerError)
 		return
 	}
 
 	// set to cache
-	h.cache.Put(fmt.Sprintf("CAMPS_FOR_SRC_%d", sourceID), data, time.Second*5)
+	h.cache.Put(fmt.Sprintf("CAMPS_FOR_SRC_%d", sourceID), camps, time.Second*5)
+	writeJson(w, encoded)
+}
 
-	writeJson(w, data)
+func filterCampaigns(camps []model.Campaign, domain string) (filtered []model.Campaign) {
+	if domain == "" {
+		return camps
+	}
+	for _, c := range camps {
+		if !slices.Contains(c.Blacklist, domain) &&
+			slices.Contains(c.Whitelist, domain) {
+			filtered = append(filtered, c)
+		}
+	}
+	return
 }
 
 func writeJson(w http.ResponseWriter, json []byte) {

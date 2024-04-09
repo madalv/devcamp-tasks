@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"adt/model"
 	"github.com/gookit/slog"
 	"sync"
 	"time"
@@ -12,7 +13,7 @@ type LocalCache struct {
 }
 
 type item struct {
-	value    []byte
+	value    []model.Campaign
 	expireAt time.Time
 }
 
@@ -23,7 +24,7 @@ func NewLocalCache() *LocalCache {
 	}
 }
 
-func (c *LocalCache) Get(key string) ([]byte, bool) {
+func (c *LocalCache) Get(key string) ([]model.Campaign, bool) {
 	c.mutex.RLock()
 	defer c.mutex.RUnlock()
 
@@ -33,23 +34,18 @@ func (c *LocalCache) Get(key string) ([]byte, bool) {
 	}
 
 	if time.Now().After(item.expireAt) {
-		c.mutex.RUnlock()
-		c.mutex.Lock()
-		delete(c.cache, key)
-		c.mutex.Unlock()
-		c.mutex.RLock()
 		return nil, false
 	}
 	return item.value, true
 }
 
-func (c *LocalCache) Put(key string, value []byte, ttl time.Duration) {
+func (c *LocalCache) Put(key string, value []model.Campaign, ttl time.Duration) {
 	c.mutex.Lock()
+	defer c.mutex.Unlock()
 
 	c.cache[key] = item{
 		value:    value,
 		expireAt: time.Now().Add(ttl),
 	}
 
-	c.mutex.Unlock()
 }
