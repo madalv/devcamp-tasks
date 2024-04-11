@@ -7,7 +7,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/gookit/slog"
 	"net/http"
-	"slices"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -53,7 +53,7 @@ func (h *handler) getCampaignsForSource(w http.ResponseWriter, r *http.Request) 
 		http.Error(w, "invalid sourceID", http.StatusBadRequest)
 		return
 	}
-	domain := strings.ToLower(r.URL.Query().Get("domain"))
+	domain := r.URL.Query().Get("domain")
 	var filteredCamps []model.Campaign
 
 	// try to retrieve from cache first
@@ -73,7 +73,8 @@ func (h *handler) getCampaignsForSource(w http.ResponseWriter, r *http.Request) 
 
 	camps, err = h.campaignRepo.GetAllBySourceID(sourceID)
 	if err != nil {
-		slog.Error(err)
+		http.Error(w, "could not get campaigns", http.StatusInternalServerError)
+		return
 	}
 	filteredCamps = filterCampaigns(camps, domain)
 
@@ -91,14 +92,44 @@ func (h *handler) getCampaignsForSource(w http.ResponseWriter, r *http.Request) 
 func filterCampaigns(camps []model.Campaign, domain string) (filtered []model.Campaign) {
 	if domain == "" {
 		return camps
+	} else {
+		domain = strings.ToLower(domain)
 	}
+
 	for _, c := range camps {
-		if !slices.Contains(c.Blacklist, domain) &&
-			slices.Contains(c.Whitelist, domain) {
+		// with the addition of the whitelist filter, blacklists are useless
+		// or are they not supposed to be used at the same time?
+		if domainInList(domain, c.Blacklist) {
+			slog.Debugf("(sub)domain %s is included in blacklist of %d", domain, c.ID)
+			continue
+		}
+		if domainInList(domain, c.Whitelist) {
+			slog.Debugf("(sub)domain %s is included in whitelist of %d", domain, c.ID)
 			filtered = append(filtered, c)
 		}
 	}
 	return
+}
+
+/*
+I make the assumption that if a camp. has domain "a.com" in its whitelist/blacklist,
+the queryDomain "b.a.com" will include/filter out the camp., but the opposite is not true, i.e.
+if a camp. has a domain "c.a.com" it its whitelist/blacklist, the queryDomain "a.com" will not
+either include/filter out the campaign.
+*/
+func domainInList(queryDomain string, list []string) bool {
+	for _, domain := range list {
+		regexPattern := `(^|\.)(` + domain + `)($)`
+		// check if the queryDomain is a subdomain of current list item
+		match, err := regexp.MatchString(regexPattern, queryDomain)
+		if err != nil {
+			return false
+		}
+		if match {
+			return true
+		}
+	}
+	return false
 }
 
 func writeJson(w http.ResponseWriter, json []byte) {
