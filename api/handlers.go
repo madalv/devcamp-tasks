@@ -119,6 +119,7 @@ either include/filter out the campaign.
 */
 func domainInList(queryDomain string, list []string) bool {
 	for _, domain := range list {
+		domain = strings.ToLower(domain)
 		regexPattern := `(^|\.)(` + domain + `)($)`
 		// check if the queryDomain is a subdomain of current list item
 		match, err := regexp.MatchString(regexPattern, queryDomain)

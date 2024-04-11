@@ -27,3 +27,10 @@ Results for the benchmark without the cache:
 PASS
 ok      adt/api 1.275s
 ```
+
+### Task 3
+
+Added whitelist/blacklist fields for campaign (currently just a list of strings). Addded a `filterCampaigns` function that 
+checks if the query domain is contained (or a subdomain of a domain contained) in a campaign's whitelist or blacklist.
+
+
