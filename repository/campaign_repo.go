@@ -2,8 +2,8 @@ package repository
 
 import (
 	"adt/model"
-	"github.com/gookit/slog"
 	"github.com/jmoiron/sqlx"
+	"log/slog"
 	"strings"
 )
 
@@ -29,10 +29,11 @@ func (r *CampaignRepository) Create(c *model.CreateCampaignDTO) (campID int64, e
 		err = tx.Commit()
 	}()
 
-	res, err := tx.Exec(`insert into campaigns (name, blacklist, whitelist) values (?, ?, ?)`,
+	res, err := tx.Exec(`insert into campaigns (name, domain_list, list_type) values (?, ?, ?)`,
 		c.Name,
-		strings.Join(c.Blacklist, ","),
-		strings.Join(c.Whitelist, ","))
+		strings.ToLower(strings.Join(c.DomainList, ",")),
+		c.ListType,
+	)
 
 	if err != nil {
 		return
@@ -64,7 +65,7 @@ func (r *CampaignRepository) GetAllNoSources() (camps []model.Campaign, err erro
 
 func (r *CampaignRepository) GetAllBySourceID(sourceID int) (camps []model.Campaign, err error) {
 	query :=
-		`select c.name, c.id, c.blacklist, c.whitelist from campaigns c
+		`select c.name, c.id, c.domain_list, c.list_type from campaigns c
 		join campaigns_sources cs on c.id = cs.campaign_id
 		where cs.source_id = ?`
 	rows, err := r.db.Queryx(query, sourceID)
@@ -75,14 +76,13 @@ func (r *CampaignRepository) GetAllBySourceID(sourceID int) (camps []model.Campa
 
 	for rows.Next() {
 		var camp model.Campaign
-		var blacklistStr, whitelistStr string
-		err = rows.Scan(&camp.Name, &camp.ID, &blacklistStr, &whitelistStr)
+		var listStr string
+		err = rows.Scan(&camp.Name, &camp.ID, &listStr, &camp.ListType)
 		if err != nil {
 			return
 		}
 
-		camp.Blacklist = strings.Split(blacklistStr, ",")
-		camp.Whitelist = strings.Split(whitelistStr, ",")
+		camp.DomainList = strings.Split(listStr, ",")
 		camps = append(camps, camp)
 	}
 

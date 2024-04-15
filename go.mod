@@ -7,7 +7,6 @@ toolchain go1.22.1
 require (
 	github.com/brianvoe/gofakeit/v7 v7.0.2
 	github.com/go-sql-driver/mysql v1.8.1
-	github.com/gookit/slog v0.5.5
 	github.com/spf13/viper v1.18.2
 )
 

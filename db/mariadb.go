@@ -2,7 +2,7 @@ package db
 
 import (
 	"adt/config"
-	"github.com/gookit/slog"
+	"log/slog"
 
 	"github.com/jmoiron/sqlx"
 )

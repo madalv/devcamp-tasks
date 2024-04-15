@@ -2,7 +2,7 @@ package repository
 
 import (
 	"adt/model"
-	"github.com/gookit/slog"
+	"log/slog"
 	"sync"
 	"time"
 )

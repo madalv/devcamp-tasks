@@ -2,8 +2,8 @@ package repository
 
 import (
 	"adt/model"
-	"github.com/gookit/slog"
 	"github.com/jmoiron/sqlx"
+	"log/slog"
 )
 
 type SourceRepository struct {

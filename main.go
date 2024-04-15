@@ -9,22 +9,28 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	_ "github.com/go-sql-driver/mysql"
-	"github.com/gookit/slog"
+	"log/slog"
 	"net/http"
+	"os"
 	"time"
 )
 
 func main() {
+	h := slog.NewJSONHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelDebug})
+	slog.SetDefault(slog.New(h))
+
 	// load cfg
 	cfg, err := config.LoadConfig("./config.yaml")
 	if err != nil {
-		slog.Fatal(err)
+		slog.Error("Could not load config", "err", err)
+		panic("could not load config")
 	}
 
 	// connect to db
 	conn, err := db.NewMariaDB(cfg)
 	if err != nil {
-		slog.Fatal(err)
+		slog.Error("Could not connect to db", "err", err)
+		panic("could not connect to db")
 	}
 
 	// repositories
@@ -38,7 +44,7 @@ func main() {
 		seeder := util.NewSeeder(sourceRepo, campRepo)
 		err = seeder.SeedDB(100, 10)
 		if err != nil {
-			slog.Fatal(err)
+			slog.Error("Could not seed db", "err", err)
 		}
 	}
 
@@ -49,9 +55,10 @@ func main() {
 
 	r = api.RegisterHandlers(r, campRepo, sourceRepo, cache)
 
-	slog.Infof("Serving HTTP on %s", cfg.HTTPort)
+	slog.Info("Serving HTTP", "port", cfg.HTTPort)
 	err = http.ListenAndServe(cfg.HTTPort, r)
 	if err != nil {
-		slog.Fatal(err)
+		slog.Error("Can't start HTTP server", "err", err)
+		panic("can't start http server")
 	}
 }

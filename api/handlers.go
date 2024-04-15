@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/go-chi/chi/v5"
-	"github.com/gookit/slog"
+	"log/slog"
 	"net/http"
 	"regexp"
 	"strconv"
@@ -97,16 +97,15 @@ func filterCampaigns(camps []model.Campaign, domain string) (filtered []model.Ca
 	}
 
 	for _, c := range camps {
-		// with the addition of the whitelist filter, blacklists are useless
-		// or are they not supposed to be used at the same time?
-		if domainInList(domain, c.Blacklist) {
-			slog.Debugf("(sub)domain %s is included in blacklist of %d", domain, c.ID)
+		contained := domainInList(domain, c.DomainList)
+
+		if (contained && c.ListType == model.BLACKLIST) ||
+			(!contained && c.ListType == model.WHITELIST) {
+			slog.Debug("Campaign skipped", "cid", c.ID, "type", c.ListType, "contained?", contained, "domain", domain, "list", c.DomainList)
 			continue
 		}
-		if domainInList(domain, c.Whitelist) {
-			slog.Debugf("(sub)domain %s is included in whitelist of %d", domain, c.ID)
-			filtered = append(filtered, c)
-		}
+		slog.Debug("Campaign good", "cid", c.ID, "type", c.ListType, "contained?", contained, "domain", domain, "list", c.DomainList)
+		filtered = append(filtered, c)
 	}
 	return
 }

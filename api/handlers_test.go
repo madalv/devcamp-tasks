@@ -9,20 +9,26 @@ import (
 	"github.com/brianvoe/gofakeit/v7"
 	"github.com/go-chi/chi/v5"
 	_ "github.com/go-sql-driver/mysql"
-	"github.com/gookit/slog"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 )
 
+func BenchFilterCampaigns() {
+
+}
+
 func TestFilterCampaigns(t *testing.T) {
+	h := slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelDebug})
+	slog.SetDefault(slog.New(h))
+
 	campaigns := []model.Campaign{
-		{ID: 1, Blacklist: []string{}, Whitelist: []string{"cruise.com"}},
-		{ID: 2, Blacklist: []string{}, Whitelist: []string{"c.com", "bruise.com"}},
-		{ID: 3, Blacklist: []string{"d.com"}, Whitelist: []string{"e.com", "d.com", "example.com"}},
-		{ID: 4, Blacklist: []string{"bruise.com"}, Whitelist: []string{"ise.com"}},
-		{ID: 5, Blacklist: []string{}, Whitelist: []string{"sub.example.com", "y.cruise.com"}},
-		{ID: 6, Blacklist: []string{"sub.test.com"}, Whitelist: []string{"sub.example.com", "m.cruise.com"}},
+		{ID: 1, DomainList: []string{"123domain.xyz", "example.com"}, ListType: model.WHITELIST},
+		{ID: 2, DomainList: []string{"123test.abc", "random.com"}, ListType: model.BLACKLIST},
+		{ID: 3, DomainList: []string{"main.xyz", "123domain.xy"}, ListType: model.WHITELIST},
+		{ID: 4, DomainList: []string{"example.com", "est.abc", "test.ab"}, ListType: model.BLACKLIST},
 	}
 
 	tests := []struct {
@@ -30,10 +36,11 @@ func TestFilterCampaigns(t *testing.T) {
 		domain         string
 		expectedResult []int64 // holds ids of filtered campaigns
 	}{
-		{"Empty domain", "", []int64{1, 2, 3, 4, 5, 6}},
-		{"Domain included in whitelist", "m.CruiSe.CoM", []int64{1, 6}},
-		{"Domain included in blacklist", "X.Bruise.COM", []int64{2}},
-		{"Domain both blacklisted and whitelisted (blacklist takes precedence)", "d.com", []int64{}},
+		{"Empty domain", "", []int64{1, 2, 3, 4}},
+		{"Domain included in whitelist", "exaMple.com", []int64{1, 2}},
+		{"Domain included in blacklist", "RANDom.cOm", []int64{4}},
+		{"Subdomain included in whitelist", "x.123domain.xyz", []int64{1, 2, 4}},
+		{"Subdomain included in blacklist", "x.123test.abc", []int64{4}},
 	}
 
 	for _, test := range tests {
@@ -57,12 +64,14 @@ func TestFilterCampaigns(t *testing.T) {
 func BenchmarkGetCampaignsForSource(b *testing.B) {
 	cfg, err := config.LoadConfig("../config.yaml")
 	if err != nil {
-		slog.Fatal(err)
+		slog.Error("err", err)
+		return
 	}
 
 	conn, err := db.NewMariaDB(cfg)
 	if err != nil {
-		slog.Fatal(err)
+		slog.Error("err", err)
+		return
 	}
 
 	campRepo := repository.NewCampaignRepository(conn)

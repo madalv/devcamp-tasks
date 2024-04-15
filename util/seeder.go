@@ -3,7 +3,7 @@ package util
 import (
 	"adt/model"
 	"github.com/brianvoe/gofakeit/v7"
-	"github.com/gookit/slog"
+	"log/slog"
 	"slices"
 )
 
@@ -44,12 +44,21 @@ func (s *DBSeeder) SeedDB(rows, maxCampPerSource int) error {
 
 func (s *DBSeeder) seedCampaigns(rows int) ([]int64, error) {
 	ids := make([]int64, rows)
+	var listType string
+
 	for i := 0; i < rows; i++ {
+
+		if i%2 == 0 {
+			listType = "white"
+		} else {
+			listType = "black"
+		}
+
 		id, err := s.campaignRepo.Create(&model.CreateCampaignDTO{
-			Name:      gofakeit.Word(),
-			SourceIDs: nil,
-			Blacklist: []string{gofakeit.DomainName()},
-			Whitelist: []string{gofakeit.DomainName()},
+			Name:       gofakeit.Word(),
+			SourceIDs:  nil,
+			DomainList: []string{gofakeit.DomainName()},
+			ListType:   listType,
 		})
 		if err != nil {
 			return nil, err
