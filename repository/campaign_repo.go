@@ -82,7 +82,12 @@ func (r *CampaignRepository) GetAllBySourceID(sourceID int) (camps []model.Campa
 			return
 		}
 
-		camp.DomainList = strings.Split(listStr, ",")
+		dList := strings.Split(listStr, ",")
+		dMap := make(map[string]struct{})
+		for _, d := range dList {
+			dMap[d] = struct{}{}
+		}
+		camp.DomainList = dMap
 		camps = append(camps, camp)
 	}
 

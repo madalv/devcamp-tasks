@@ -49,9 +49,9 @@ func (s *DBSeeder) seedCampaigns(rows int) ([]int64, error) {
 	for i := 0; i < rows; i++ {
 
 		if i%2 == 0 {
-			listType = "white"
+			listType = model.WHITELIST
 		} else {
-			listType = "black"
+			listType = model.BLACKLIST
 		}
 
 		id, err := s.campaignRepo.Create(&model.CreateCampaignDTO{

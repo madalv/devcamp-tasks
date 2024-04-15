@@ -6,10 +6,10 @@ const (
 )
 
 type Campaign struct {
-	ID         int64    `db:"id" json:"id"`
-	Name       string   `db:"name" json:"name"`
-	DomainList []string `db:"blacklist" json:"domain_list"`
-	ListType   string   `db:"list_type" json:"list_type"`
+	ID         int64               `db:"id" json:"id"`
+	Name       string              `db:"name" json:"name"`
+	DomainList map[string]struct{} `db:"blacklist" json:"domain_list"`
+	ListType   string              `db:"list_type" json:"list_type"`
 }
 
 type CreateCampaignDTO struct {

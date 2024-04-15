@@ -11,7 +11,12 @@ migdown:
 	migrate -path db/migrations -database "mysql://user:password@tcp(127.0.0.1:3306)/db" -verbose down
 
 bench:
-	go test ./api -bench=.
+	go test ./api -bench=$(test)
 
+benchmem:
+	go test ./api -bench=$(test) -benchmem -memprofile profiles/$(name).out
 
-.PHONY: run sqlc migup migdown newmig bench
+benchcpu:
+	go test ./api -bench=$(test) -cpuprofile profiles/$(name).out
+
+.PHONY: run sqlc migup migdown newmig bench benchmem benchcpu

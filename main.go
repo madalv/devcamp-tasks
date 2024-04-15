@@ -9,6 +9,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/lmittmann/tint"
 	"log/slog"
 	"net/http"
 	"os"
@@ -16,8 +17,7 @@ import (
 )
 
 func main() {
-	h := slog.NewJSONHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelDebug})
-	slog.SetDefault(slog.New(h))
+	configureLogger()
 
 	// load cfg
 	cfg, err := config.LoadConfig("./config.yaml")
@@ -61,4 +61,14 @@ func main() {
 		slog.Error("Can't start HTTP server", "err", err)
 		panic("can't start http server")
 	}
+}
+
+func configureLogger() {
+	handler := tint.NewHandler(os.Stdout, &tint.Options{
+		Level:      slog.LevelDebug,
+		TimeFormat: time.RFC3339,
+	})
+
+	l := slog.New(handler)
+	slog.SetDefault(l)
 }

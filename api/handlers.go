@@ -5,9 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/go-chi/chi/v5"
-	"log/slog"
 	"net/http"
-	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -101,10 +99,10 @@ func filterCampaigns(camps []model.Campaign, domain string) (filtered []model.Ca
 
 		if (contained && c.ListType == model.BLACKLIST) ||
 			(!contained && c.ListType == model.WHITELIST) {
-			slog.Debug("Campaign skipped", "cid", c.ID, "type", c.ListType, "contained?", contained, "domain", domain, "list", c.DomainList)
+			//slog.Debug("Campaign skipped", "cid", c.ID, "contained?", contained, "domain", domain, "type", c.ListType, "list", c.DomainList)
 			continue
 		}
-		slog.Debug("Campaign good", "cid", c.ID, "type", c.ListType, "contained?", contained, "domain", domain, "list", c.DomainList)
+		//slog.Debug("Campaign good", "cid", c.ID, "contained?", contained, "domain", domain, "type", c.ListType, "list", c.DomainList)
 		filtered = append(filtered, c)
 	}
 	return
@@ -116,19 +114,16 @@ the queryDomain "b.a.com" will include/filter out the camp., but the opposite is
 if a camp. has a domain "c.a.com" it its whitelist/blacklist, the queryDomain "a.com" will not
 either include/filter out the campaign.
 */
-func domainInList(queryDomain string, list []string) bool {
-	for _, domain := range list {
-		domain = strings.ToLower(domain)
-		regexPattern := `(^|\.)(` + domain + `)($)`
-		// check if the queryDomain is a subdomain of current list item
-		match, err := regexp.MatchString(regexPattern, queryDomain)
-		if err != nil {
-			return false
-		}
-		if match {
+func domainInList(queryDomain string, dMap map[string]struct{}) bool {
+	parts := strings.Split(queryDomain, ".")
+	for i := 0; i < len(parts)-1; i++ {
+		currDomain := strings.Join(parts[i:], ".")
+		_, ok := dMap[currDomain]
+		if ok {
 			return true
 		}
 	}
+
 	return false
 }
 

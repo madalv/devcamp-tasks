@@ -16,8 +16,42 @@ import (
 	"testing"
 )
 
-func BenchFilterCampaigns() {
+func BenchmarkFilterCampaigns(b *testing.B) {
+	campaigns := generateCampaigns(1000)
 
+	domain := gofakeit.DomainName()
+
+	for i := 0; i < b.N; i++ {
+		filterCampaigns(campaigns, domain)
+	}
+}
+
+func generateCampaigns(n int) []model.Campaign {
+	camps := make([]model.Campaign, n)
+	var listType string
+
+	for i := 0; i < n; i++ {
+
+		nrDomains := gofakeit.Number(1, n)
+		domains := make(map[string]struct{})
+		for j := 0; j < nrDomains; j++ {
+			domains[gofakeit.DomainName()] = struct{}{}
+		}
+
+		if i%2 == 0 {
+			listType = model.WHITELIST
+		} else {
+			listType = model.BLACKLIST
+		}
+
+		camps[i] = model.Campaign{
+			ID:         int64(i),
+			Name:       gofakeit.Word(),
+			DomainList: domains,
+			ListType:   listType,
+		}
+	}
+	return camps
 }
 
 func TestFilterCampaigns(t *testing.T) {
@@ -25,10 +59,10 @@ func TestFilterCampaigns(t *testing.T) {
 	slog.SetDefault(slog.New(h))
 
 	campaigns := []model.Campaign{
-		{ID: 1, DomainList: []string{"123domain.xyz", "example.com"}, ListType: model.WHITELIST},
-		{ID: 2, DomainList: []string{"123test.abc", "random.com"}, ListType: model.BLACKLIST},
-		{ID: 3, DomainList: []string{"main.xyz", "123domain.xy"}, ListType: model.WHITELIST},
-		{ID: 4, DomainList: []string{"example.com", "est.abc", "test.ab"}, ListType: model.BLACKLIST},
+		{ID: 1, DomainList: map[string]struct{}{"123domain.xyz": {}, "example.com": {}}, ListType: model.WHITELIST},
+		{ID: 2, DomainList: map[string]struct{}{"123test.abc": {}, "random.com": {}}, ListType: model.BLACKLIST},
+		{ID: 3, DomainList: map[string]struct{}{"123domain.xy": {}, "main.xyz": {}}, ListType: model.WHITELIST},
+		{ID: 4, DomainList: map[string]struct{}{"example.com": {}, "est.abc": {}, "test.ab": {}}, ListType: model.BLACKLIST},
 	}
 
 	tests := []struct {
@@ -50,7 +84,7 @@ func TestFilterCampaigns(t *testing.T) {
 				t.Errorf("Expected %d campaigns, but got %d", len(test.expectedResult), len(filtered))
 			}
 
-			if len(filtered) > 0 {
+			if len(filtered) > 0 && len(filtered) == len(test.expectedResult) {
 				for i := range filtered {
 					if filtered[i].ID != test.expectedResult[i] {
 						t.Errorf("Expected %v campaigns, but got %v", test.expectedResult, filtered)
