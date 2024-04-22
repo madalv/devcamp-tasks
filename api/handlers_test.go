@@ -26,6 +26,14 @@ func BenchmarkFilterCampaigns(b *testing.B) {
 	}
 }
 
+func BenchmarkSortCampaignsByBid(b *testing.B) {
+	campaigns := generateCampaigns(1000)
+
+	for i := 0; i < b.N; i++ {
+		sortCampaignsByBid(campaigns)
+	}
+}
+
 func generateCampaigns(n int) []model.Campaign {
 	camps := make([]model.Campaign, n)
 	var listType string

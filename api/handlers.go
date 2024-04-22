@@ -5,9 +5,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/go-chi/chi/v5"
+	"log/slog"
 	"net/http"
+	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -57,7 +60,9 @@ func (h *handler) getCampaignsForSource(w http.ResponseWriter, r *http.Request) 
 	// try to retrieve from cache first
 	camps, ok := h.cache.Get(fmt.Sprintf("CAMPS_FOR_SRC_%d", sourceID))
 	if ok {
+		slog.Info("got from cache", "camps", camps)
 		filteredCamps = filterCampaigns(camps, domain)
+		sortCampaignsByBid(filteredCamps)
 
 		encoded, err := json.Marshal(filteredCamps)
 		if err != nil {
@@ -75,16 +80,52 @@ func (h *handler) getCampaignsForSource(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	filteredCamps = filterCampaigns(camps, domain)
+	sortCampaignsByBid(filteredCamps)
 
 	encoded, err := json.Marshal(filteredCamps)
 	if err != nil {
 		http.Error(w, "could not marshal response", http.StatusInternalServerError)
 		return
 	}
-
 	// set to cache
-	h.cache.Put(fmt.Sprintf("CAMPS_FOR_SRC_%d", sourceID), camps, time.Second*5)
+	h.cache.Put(fmt.Sprintf("CAMPS_FOR_SRC_%d", sourceID), camps, time.Second*10)
 	writeJson(w, encoded)
+}
+
+type bid struct {
+	index  int
+	amount int
+}
+
+func sortCampaignsByBid(camps []model.Campaign) {
+	n := len(camps)
+	var wg sync.WaitGroup
+	bidChan := make(chan *bid)
+	bids := make([]int, n)
+	wg.Add(n)
+
+	for i := range camps {
+		go func(i int) {
+			c := &camps[i]
+			amount := c.Call()
+			bidChan <- &bid{i, amount}
+		}(i)
+	}
+
+	go func() {
+		for bid := range bidChan {
+			bids[bid.index] = bid.amount
+			wg.Done()
+		}
+	}()
+
+	wg.Wait()
+	close(bidChan)
+
+	// sort slice according to bids
+	sort.Slice(camps, func(i, j int) bool {
+		return bids[i] > bids[j]
+	})
 }
 
 func filterCampaigns(camps []model.Campaign, domain string) (filtered []model.Campaign) {
